@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. Roles (Table ki jagah Enum use karna Prisma me zyada aasan aur fast hota hai)
+enum Role {
+  CUSTOMER
+  ADMIN
+  SELLER
+  DELIVERY_PARTNER
+}
+
+// 2. Main User Table
+model User {
+  user_id       Int      @id @default(autoincrement())
+  first_name    String
+  last_name     String?
+  email         String   @unique
+  phone         String?  @unique
+  password_hash String
+  username      String   @unique
+  role          Role     @default(CUSTOMER)
+  is_active     Boolean  @default(true)
+  created_at    DateTime @default(now())
+
+  // Profiles (1-to-1 Relation)
+  customer_profile CustomerProfile?
+  seller_profile   SellerProfile?
+  delivery_profile DeliveryProfile?
+  
+  // Other Relations (1-to-Many)
+  addresses        Address[]
+  products         Product[] // Agar role SELLER hai
+  cart             Cart?
+}
+
+// 3. User Profiles (Simple rakhi hain)
+model CustomerProfile {
+  id             Int  @id @default(autoincrement())
+  user_id        Int  @unique // @unique zaroori hai 1-to-1 relation ke liye
+  loyalty_points Int  @default(0)
+  
+  user           User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+model SellerProfile {
+  id         Int    @id @default(autoincrement())
+  user_id    Int    @unique
+  shop_name  String
+  gst_number String?
+  
+  user       User   @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+model DeliveryProfile {
+  id             Int    @id @default(autoincrement())
+  user_id        Int    @unique
+  vehicle_number String?
+  
+  user           User   @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+// 4. Address Table
+model Address {
+  address_id   Int     @id @default(autoincrement())
+  user_id      Int
+  address_line String
+  city         String
+  state        String
+  postal_code  String
+  is_default   Boolean @default(false)
+
+  user         User    @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+}
+
+// 5. Category & Product Table (Bina complex variants ke)
+model Category {
+  category_id Int       @id @default(autoincrement())
+  name        String    @unique
+  products    Product[]
+}
+
+model Product {
+  product_id  Int      @id @default(autoincrement())
+  title       String
+  description String?
+  price       Float
+  stock       Int      @default(0)
+  
+  // Jis seller ne add kiya
+  seller_id   Int
+  seller      User     @relation(fields: [seller_id], references: [user_id], onDelete: Cascade)
+  
+  category_id Int
+  category    Category @relation(fields: [category_id], references: [category_id])
+
+  cart_items  CartItem[]
+}
+
+// 6. Basic Cart System
+model Cart {
+  cart_id Int        @id @default(autoincrement())
+  user_id Int        @unique
+  
+  user    User       @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  items   CartItem[]
+}
+
+model CartItem {
+  id         Int     @id @default(autoincrement())
+  cart_id    Int
+  product_id Int
+  quantity   Int     @default(1)
+
+  cart       Cart    @relation(fields: [cart_id], references: [cart_id], onDelete: Cascade)
+  product    Product @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
+}
