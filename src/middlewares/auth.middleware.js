@@ -25,7 +25,7 @@ const authenticate = catchAsync(async (req, res, next) => {
 
     const user = await prisma.user.findUnique({
         where: {
-            id: payload.userId
+            user_id: payload.userId
         }
     });
 
@@ -46,7 +46,7 @@ const optionalAuthenticate = catchAsync(async (req, res, next) => {
         const payload = verifyAccessToken(token);
         const user = await prisma.user.findUnique({
             where: {
-                id: payload.userId
+                user_id: payload.userId
             }
         });
         

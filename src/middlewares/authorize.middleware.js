@@ -8,11 +8,11 @@ const authorize = (...roles) => {
 
         console.log("========== AUTHORIZE ==========");
 
-        console.log("User Role :", req.user.role_name);
+        console.log("User Role :", req.user.role);
 
         console.log("Allowed :", roles);
 
-        if (!roles.includes(req.user.role_name)) {
+        if (!roles.includes(req.user.role)) {
             console.log(req.user)
             throw new AppError(
                 "You do not have permission to perform this action",
