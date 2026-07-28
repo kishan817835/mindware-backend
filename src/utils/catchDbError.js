@@ -5,6 +5,10 @@ const catchDbError = (fn) => {
         try {
             return await fn(...args);
         } catch (error) {
+            if (error instanceof AppError) {
+                throw error;
+            }
+
             console.log("DB Error:", error.code, "-", error.message);
 
             if (error.code) {

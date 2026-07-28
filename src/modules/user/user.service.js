@@ -30,38 +30,46 @@ const createUser = catchDbError(async (userData) => {
     return user;
 });
 
-const loginUser = catchDbError(async(userData)=>{
+const loginUser = catchDbError(async (userData) => {
+    let user;
 
+    if (userData.email) {
+        user = await prisma.user.findUnique({
+            where: { email: userData.email }
+        });
 
-    if(!userData){
-        throw new AppError("User data is required", 400);
-    }
-    if(!userData.username && !userData.email){
-        throw new AppError("Atleast username or email is required", 400);
-    }
-    if(!userData.password){
-        throw new AppError("Password is required", 400);
-    }
-
-    const user = userData.email ? await prisma.user.findUnique({
-        where: {
-            email: userData.email
+        if (!user) {
+            throw new AppError("Is email se koi account registered nahi hai", 404);
         }
-    }) : await prisma.user.findUnique({
-        where: {
-            username: userData.username
+    } else if (userData.username) {
+        user = await prisma.user.findUnique({
+            where: { username: userData.username }
+        });
+
+        if (!user) {
+            throw new AppError("There is no account with this username", 404);
         }
-    });
-    if(!user){
-        throw new AppError("User not found", 404);
+    } else {
+        throw new AppError("Email or username is required", 400);
     }
-    if(user.password_hash !== userData.password){
+
+    if (user.password_hash !== userData.password) {
         throw new AppError("Invalid password", 401);
     }
+
     const token = accessToken(user);
-    user.token= token
-    return {user};
-})
+    
+    return {
+        user: {
+            user_id: user.user_id,
+            first_name: user.first_name,
+            email: user.email,
+            username: user.username,
+            role: user.role
+        },
+        token
+    };
+});
 
 export {
     createUser,
